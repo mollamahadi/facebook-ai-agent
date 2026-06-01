@@ -21,11 +21,18 @@ app.get("/", (req, res) => {
 });
 
 app.get("/test-ai", async (req, res) => {
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: "Say hello from Kairo AI Assistant",
-  });
-  res.send(response.text);
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: "Say hello from Kairo AI Assistant",
+    });
+
+    res.send(response.text || "Hello from Kairo AI Assistant!");
+  } catch (error) {
+    console.error("Test AI Error:", error.response?.data || error.message);
+
+    res.send("Hello from Kairo AI Assistant! AI fallback is working.");
+  }
 });
 
 // Meta webhook verify
@@ -48,6 +55,7 @@ app.post("/webhook", async (req, res) => {
 
   try {
     const body = req.body;
+
     if (body.object !== "page") return;
 
     for (const entry of body.entry || []) {
@@ -57,6 +65,8 @@ app.post("/webhook", async (req, res) => {
 
         if (!senderId || !messageText) continue;
         if (event.message?.is_echo) continue;
+
+        console.log("New message:", messageText);
 
         const reply = await generateAIReply(messageText);
         await sendFacebookMessage(senderId, reply);
@@ -74,10 +84,12 @@ You are Kairo AI Assistant for a Facebook clothing page.
 Rules:
 - Always say you are an AI assistant.
 - Reply in the same language as the customer.
+- Keep replies short, friendly, and helpful.
 - Do not make fake promises.
 - Do not confirm payment.
 - Do not promise refund.
-- If customer asks about payment/refund/complaint, tell admin will check.
+- If customer asks about payment, refund, complaint, or order issue, tell them admin will check.
+- Do not ask for sensitive personal data.
 
 Business Info:
 Brand: Kairo
@@ -85,7 +97,7 @@ Product: Premium Drop Shoulder T-shirt
 Fabric: 100% soft cotton
 GSM: 220+ GSM
 Fit: Oversized, Unisex
-Price: With print 499 BDT, 
+Price: With print 499 BDT
 Delivery: Inside city 80 BDT, Outside city 120 BDT
 Delivery time: 2-3 days
 Payment: COD available for ready design. Custom design needs advance delivery charge.
@@ -94,22 +106,68 @@ Customer message:
 ${userMessage}
 `;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+    });
 
-  return response.text || "I’m Kairo AI Assistant. Admin will reply soon.";
+    return response.text || getFallbackReply(userMessage);
+  } catch (error) {
+    console.error("Gemini Error:", error.response?.data || error.message);
+    return getFallbackReply(userMessage);
+  }
+}
+
+function getFallbackReply(userMessage = "") {
+  const text = userMessage.toLowerCase();
+
+  if (
+    text.includes("price") ||
+    text.includes("dam") ||
+    text.includes("দাম") ||
+    text.includes("koto") ||
+    text.includes("কত")
+  ) {
+    return "I’m Kairo AI Assistant. আমাদের Premium Drop Shoulder T-shirt এর price 499 BDT। Fabric: 100% soft cotton, 220+ GSM, Oversized fit।";
+  }
+
+  if (
+    text.includes("delivery") ||
+    text.includes("charge") ||
+    text.includes("ডেলিভারি")
+  ) {
+    return "I’m Kairo AI Assistant. Delivery charge: inside city 80 BDT, outside city 120 BDT। Delivery time 2-3 days।";
+  }
+
+  if (
+    text.includes("payment") ||
+    text.includes("refund") ||
+    text.includes("complaint") ||
+    text.includes("পেমেন্ট") ||
+    text.includes("রিফান্ড") ||
+    text.includes("সমস্যা")
+  ) {
+    return "I’m Kairo AI Assistant. আপনার বিষয়টি admin check করবে। একটু অপেক্ষা করুন।";
+  }
+
+  return "I’m Kairo AI Assistant. Kairo Premium Drop Shoulder T-shirt price 499 BDT। 100% soft cotton, 220+ GSM, Oversized fit। Delivery 2-3 days।";
 }
 
 async function sendFacebookMessage(senderId, text) {
-  await axios.post(
-    `https://graph.facebook.com/v20.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
-    {
-      recipient: { id: senderId },
-      message: { text },
-    }
-  );
+  try {
+    await axios.post(
+      `https://graph.facebook.com/v20.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+      {
+        recipient: { id: senderId },
+        message: { text },
+      }
+    );
+
+    console.log("Reply sent successfully");
+  } catch (error) {
+    console.error("Facebook Send Error:", error.response?.data || error.message);
+  }
 }
 
 app.listen(PORT, () => {
