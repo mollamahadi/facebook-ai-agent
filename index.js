@@ -142,20 +142,35 @@ ${userMessage}
 
 function getQuickReply(userMessage = "") {
   const text = userMessage.toLowerCase().trim();
+if (
+  text === "hi" ||
+  text === "hello" ||
+  text === "hey" ||
+  text === "hii" ||
+  text === "helo" ||
+  text === "হাই" ||
+  text === "হ্যালো"
+) {
+  return `আমি Kairo AI Assistant। 😊
 
-  if (
-    text === "hi" ||
-    text === "hello" ||
-    text === "hey" ||
-    text === "hii" ||
-    text === "helo" ||
-    text === "হাই" ||
-    text === "হ্যালো" ||
-    text === "আসসালামু আলাইকুম" ||
-    text === "সালাম"
-  ) {
-    return "আমি Kairo AI Assistant। 😊 Kairo-তে আপনাকে স্বাগতম। আমাদের প্রিমিয়াম ড্রপ শোল্ডার টি-শার্টের দাম ৪৯৯ টাকা। সাইজ, ডেলিভারি বা অর্ডার সম্পর্কে জানতে চাইলে আমাকে লিখুন।";
-  }
+Kairo-তে আপনাকে স্বাগতম।
+
+আমাদের Premium Drop Shoulder T-Shirt:
+✔️ 100% Soft Cotton
+✔️ 220+ GSM
+✔️ Oversized Unisex Fit
+✔️ Price: 499 টাকা
+
+📌 দ্রুত তথ্য পেতে নিচের যেকোনো একটি লিখুন:
+
+💰 Price → পণ্যের দাম
+📏 Size → সাইজ চার্ট
+🚚 Delivery → ডেলিভারি চার্জ ও সময়
+🛒 Order → অর্ডার করার নিয়ম
+🎨 Custom → কাস্টম ডিজাইন সম্পর্কে তথ্য
+
+আপনার প্রশ্ন লিখুন, আমি সাহায্য করার চেষ্টা করব।`;
+}
 
   if (
     text.includes("price") ||
